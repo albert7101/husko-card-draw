@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gesture Card Carousel</title>
+    <link rel="stylesheet" href="style.css?v=12" />
+  </head>
+  <body>
+    <main class="stage">
+      <header class="topbar">
+        <div>
+          <p class="kicker">GESTURE DECK</p>
+          <h1>Pick a card</h1>
+        </div>
+        <div class="card-counter">
+          <span id="currentCard">1</span>
+          <span class="counter-divider">/</span>
+          <span id="totalCards">20</span>
+        </div>
+      </header>
+
+      <section class="carousel-scene" aria-label="Card carousel">
+        <div id="carousel" class="carousel"></div>
+        <div id="pinchHint" class="pinch-hint" aria-hidden="true">
+          <span class="pinch-hand">🤏</span>
+          <span>Pinch to flip</span>
+        </div>
+      </section>
+
+      <div class="gesture-guide" aria-hidden="true">
+        <span>← Swing to rotate →</span>
+        <span class="guide-dot"></span>
+        <span>Pinch to flip</span>
+      </div>
+
+      <div id="status" class="status" aria-live="polite">
+        Show your hand — swing to rotate, pinch to flip
+      </div>
+    </main>
+
+    <section class="camera-panel" aria-label="Camera preview">
+      <video id="camera" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="cards.js?v=8"></script>
+    <script src="script.js?v=16"></script>
+  </body>
+</html>
