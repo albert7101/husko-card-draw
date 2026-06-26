@@ -2,16 +2,17 @@ const isTouchDevice = navigator.maxTouchPoints > 0;
 const isCompactDevice = isTouchDevice || window.innerWidth <= 760;
 const isAndroidDevice = /Android/i.test(navigator.userAgent);
 const mobileGestureMode = isAndroidDevice || (isTouchDevice && isCompactDevice);
-const inferenceIntervalMs = mobileGestureMode ? 140 : isCompactDevice ? 100 : 60;
+const inferenceIntervalMs = mobileGestureMode ? 220 : isCompactDevice ? 120 : 60;
+const renderIntervalMs = mobileGestureMode ? 34 : 0;
 const pinchCloseRatio = 0.52;
 const pinchReleaseRatio = 0.72;
 const pinchHoldFrames = 2;
 const pinchReleaseFrames = 2;
 const handReadyFrames = 3;
-const handSpeedMultiplier = isCompactDevice ? 7 : 8;
-const maxSpinSpeed = isCompactDevice ? 20 : 28;
-const stopSpinSpeed = 0.08;
-const spinFriction = isCompactDevice ? 0.978 : 0.984;
+const handSpeedMultiplier = mobileGestureMode ? 6 : isCompactDevice ? 7 : 8;
+const maxSpinSpeed = mobileGestureMode ? 14 : isCompactDevice ? 20 : 28;
+const stopSpinSpeed = mobileGestureMode ? 0.16 : 0.08;
+const spinFriction = mobileGestureMode ? 0.964 : isCompactDevice ? 0.978 : 0.984;
 
 const stage = document.querySelector(".stage");
 const carousel = document.getElementById("carousel");
@@ -46,6 +47,7 @@ let pinchHintTimer = null;
 let spinVelocity = 0;
 let spinAnimationFrame = null;
 let lastSpinFrameTime = 0;
+let lastRenderTime = 0;
 let pointerStartX = 0;
 let pointerLastX = 0;
 let pointerLastTime = 0;
@@ -137,11 +139,11 @@ function circularOffset(index) {
 
 function renderCards() {
   const cards = carousel.querySelectorAll(".card-shell");
-  const visibleLimit = isCompactDevice ? 2.7 : 4.6;
-  const spread = isCompactDevice ? 34 : 42;
-  const scaleStep = isCompactDevice ? 0.13 : 0.105;
-  const turnStep = isCompactDevice ? -7 : -11;
-  const depthStep = isCompactDevice ? -36 : -85;
+  const visibleLimit = mobileGestureMode ? 1.65 : isCompactDevice ? 2.7 : 4.6;
+  const spread = mobileGestureMode ? 30 : isCompactDevice ? 34 : 42;
+  const scaleStep = mobileGestureMode ? 0.15 : isCompactDevice ? 0.13 : 0.105;
+  const turnStep = mobileGestureMode ? 0 : isCompactDevice ? -7 : -11;
+  const depthStep = mobileGestureMode ? 0 : isCompactDevice ? -36 : -85;
 
   selectedIndex = ((Math.round(wheelPosition) % CARD_DATA.length) + CARD_DATA.length) % CARD_DATA.length;
 
@@ -201,6 +203,7 @@ function stopSpin(brake = false) {
 
   spinVelocity = 0;
   lastSpinFrameTime = 0;
+  lastRenderTime = 0;
   carousel.classList.remove("is-spinning");
   carousel.classList.add("is-settling");
   wheelPosition = Math.round(wheelPosition);
@@ -224,11 +227,16 @@ function animateSpin(time) {
   const elapsed = Math.min((time - lastSpinFrameTime) / 1000, 0.05);
   lastSpinFrameTime = time;
   wheelPosition += spinVelocity * elapsed;
-  renderCards();
+
+  if (!renderIntervalMs || time - lastRenderTime >= renderIntervalMs) {
+    lastRenderTime = time;
+    renderCards();
+  }
 
   spinVelocity *= Math.pow(spinFriction, elapsed * 60);
 
   if (Math.abs(spinVelocity) <= stopSpinSpeed) {
+    renderCards();
     stopSpin();
     return;
   }
@@ -245,6 +253,7 @@ function launchSpin(velocity) {
 
   if (spinAnimationFrame === null) {
     lastSpinFrameTime = 0;
+    lastRenderTime = 0;
     spinAnimationFrame = requestAnimationFrame(animateSpin);
   }
 
@@ -534,8 +543,8 @@ async function startHands() {
         inferenceBusy = false;
       }
     },
-    width: mobileGestureMode ? 256 : isCompactDevice ? 360 : 480,
-    height: mobileGestureMode ? 192 : isCompactDevice ? 270 : 360,
+    width: mobileGestureMode ? 192 : isCompactDevice ? 360 : 480,
+    height: mobileGestureMode ? 144 : isCompactDevice ? 270 : 360,
   });
 
   camera.start().catch(() => {

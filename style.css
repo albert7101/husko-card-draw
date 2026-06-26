@@ -157,6 +157,10 @@ h1 {
   animation: pinchGesture 850ms ease-in-out infinite;
 }
 
+body.mobile-gesture-mode .pinch-hint.is-visible .pinch-hand {
+  animation: none;
+}
+
 @keyframes pinchGesture {
   0%,
   100% {
@@ -238,9 +242,7 @@ h1 {
 }
 
 body.mobile-gesture-mode .card-face {
-  box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.38),
-    inset 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
 }
 
 .card-front {
@@ -285,9 +287,9 @@ body.mobile-gesture-mode .card-face {
 
 body.mobile-gesture-mode .card-face.has-image::before {
   inset: -8px;
-  filter: blur(8px);
-  opacity: 0.58;
-  transform: scale(1.04);
+  filter: none;
+  opacity: 0.34;
+  transform: none;
 }
 
 .card-photo {
@@ -301,7 +303,7 @@ body.mobile-gesture-mode .card-face.has-image::before {
 }
 
 body.mobile-gesture-mode .card-photo {
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+  box-shadow: none;
 }
 
 .card-face.has-image .card-content {
@@ -408,6 +410,10 @@ body.mobile-gesture-mode .card-photo {
 .gesture-indicator.is-open .gesture-indicator-dot {
   background: #80ffdb;
   box-shadow: 0 0 0 6px rgba(128, 255, 219, 0.12);
+}
+
+body.mobile-gesture-mode .gesture-indicator-dot {
+  box-shadow: none !important;
 }
 
 .gesture-indicator.is-open {
