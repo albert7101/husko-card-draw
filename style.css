@@ -11,6 +11,7 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow: hidden;
+  touch-action: none;
   color: #f8fafc;
   background:
     radial-gradient(circle at 50% 40%, rgba(66, 153, 225, 0.16), transparent 34%),
@@ -29,6 +30,8 @@ input {
   height: 100vh;
   min-height: 560px;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
 }
 
 .stage::before {
@@ -95,6 +98,7 @@ h1 {
   display: grid;
   place-items: center;
   perspective: 1100px;
+  touch-action: none;
 }
 
 .carousel {
@@ -177,6 +181,7 @@ h1 {
   transform-style: preserve-3d;
   transition: opacity 120ms ease;
   will-change: transform;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .card-shell.is-selected {
@@ -241,13 +246,41 @@ h1 {
   position: absolute;
   inset: 0;
   content: "";
-  background: linear-gradient(to top, rgba(3, 7, 18, 0.72), transparent 52%);
+  z-index: 1;
+  background:
+    radial-gradient(circle at center, transparent 34%, rgba(3, 7, 18, 0.34) 100%),
+    linear-gradient(to top, rgba(3, 7, 18, 0.42), transparent 52%);
 }
 
 .card-face.has-image {
   background-color: #080c15;
+}
+
+.card-face.has-image::before {
+  position: absolute;
+  inset: -18px;
+  content: "";
+  background-image: var(--card-image);
+  background-position: center;
   background-repeat: no-repeat;
-  background-size: contain;
+  background-size: cover;
+  filter: blur(18px) saturate(1.18);
+  opacity: 0.85;
+  transform: scale(1.08);
+}
+
+.card-photo {
+  position: relative;
+  z-index: 2;
+  width: 86%;
+  height: 86%;
+  border-radius: 18px;
+  object-fit: contain;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+}
+
+.card-face.has-image .card-content {
+  display: none;
 }
 
 .card-content {

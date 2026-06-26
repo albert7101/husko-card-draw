@@ -1,4 +1,6 @@
-const inferenceIntervalMs = 60;
+const isTouchDevice = navigator.maxTouchPoints > 0;
+const isCompactDevice = isTouchDevice || window.innerWidth <= 760;
+const inferenceIntervalMs = isCompactDevice ? 85 : 60;
 const pinchCloseRatio = 0.52;
 const pinchReleaseRatio = 0.72;
 const pinchHoldFrames = 2;
@@ -9,6 +11,7 @@ const maxSpinSpeed = 28;
 const stopSpinSpeed = 0.08;
 const spinFriction = 0.984;
 
+const stage = document.querySelector(".stage");
 const carousel = document.getElementById("carousel");
 const pinchHint = document.getElementById("pinchHint");
 const currentCard = document.getElementById("currentCard");
@@ -34,6 +37,12 @@ let pinchHintTimer = null;
 let spinVelocity = 0;
 let spinAnimationFrame = null;
 let lastSpinFrameTime = 0;
+let pointerStartX = 0;
+let pointerLastX = 0;
+let pointerLastTime = 0;
+let pointerIsDown = false;
+let pointerMoved = false;
+let suppressNextClick = false;
 
 function createFace(face, card, number) {
   const image = face === "front" ? card.frontImage : card.backImage;
@@ -43,8 +52,14 @@ function createFace(face, card, number) {
   element.className = `card-face card-${face}`;
 
   if (image) {
-    element.style.backgroundImage = `url("${image}")`;
+    element.style.setProperty("--card-image", `url("${image}")`);
     element.classList.add("has-image");
+
+    const photo = document.createElement("img");
+    photo.className = "card-photo";
+    photo.src = image;
+    photo.alt = label || `Card ${number}`;
+    element.append(photo);
   }
 
   const content = document.createElement("div");
@@ -79,9 +94,20 @@ function buildCards() {
     inner.append(createFace("front", card, number), createFace("back", card, number));
     shell.append(inner);
     shell.addEventListener("click", () => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+
       stopSpin(true);
-      closeOpenCards();
+
+      if (index === selectedIndex && Math.abs(circularOffset(index)) < 0.5) {
+        flipSelectedCard();
+        return;
+      }
+
       const offset = circularOffset(index);
+      closeOpenCards();
       wheelPosition += offset;
       selectedIndex = index;
       renderCards();
@@ -440,13 +466,67 @@ function startHands() {
         inferenceBusy = false;
       }
     },
-    width: 480,
-    height: 360,
+    width: isCompactDevice ? 360 : 480,
+    height: isCompactDevice ? 270 : 360,
   });
 
   camera.start().catch(() => {
     setStatus("Camera unavailable - use arrow keys and Space");
   });
+}
+
+function startPointerControls() {
+  stage.addEventListener("pointerdown", (event) => {
+    if (event.target.closest(".camera-panel")) return;
+
+    pointerIsDown = true;
+    pointerMoved = false;
+    pointerStartX = event.clientX;
+    pointerLastX = event.clientX;
+    pointerLastTime = performance.now();
+    stage.setPointerCapture(event.pointerId);
+  });
+
+  stage.addEventListener("pointermove", (event) => {
+    if (!pointerIsDown) return;
+
+    const now = performance.now();
+    const deltaX = event.clientX - pointerLastX;
+    const totalMovement = event.clientX - pointerStartX;
+    const elapsed = Math.max((now - pointerLastTime) / 1000, 0.016);
+
+    pointerLastX = event.clientX;
+    pointerLastTime = now;
+
+    if (Math.abs(totalMovement) > 10) {
+      pointerMoved = true;
+    }
+
+    if (Math.abs(deltaX) >= 2) {
+      const screenMovement = deltaX / Math.max(window.innerWidth, 1);
+      launchSpin((screenMovement / elapsed) * handSpeedMultiplier * 1.8);
+    }
+  });
+
+  function finishPointer(event) {
+    if (!pointerIsDown) return;
+
+    pointerIsDown = false;
+
+    if (stage.hasPointerCapture(event.pointerId)) {
+      stage.releasePointerCapture(event.pointerId);
+    }
+
+    if (pointerMoved) {
+      suppressNextClick = true;
+      setTimeout(() => {
+        suppressNextClick = false;
+      }, 250);
+    }
+  }
+
+  stage.addEventListener("pointerup", finishPointer);
+  stage.addEventListener("pointercancel", finishPointer);
 }
 
 document.addEventListener("keydown", (event) => {
@@ -461,4 +541,5 @@ document.addEventListener("keydown", (event) => {
 });
 
 buildCards();
+startPointerControls();
 startHands();
