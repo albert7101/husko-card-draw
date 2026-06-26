@@ -19,6 +19,10 @@ body {
     #070a12;
 }
 
+body.mobile-gesture-mode {
+  background: #070a12;
+}
+
 button,
 input {
   font: inherit;
@@ -44,6 +48,10 @@ input {
     linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: linear-gradient(to bottom, transparent, black 30%, black 75%, transparent);
+}
+
+body.mobile-gesture-mode .stage::before {
+  display: none;
 }
 
 .topbar {
@@ -229,6 +237,12 @@ h1 {
     inset 0 1px rgba(255, 255, 255, 0.14);
 }
 
+body.mobile-gesture-mode .card-face {
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.38),
+    inset 0 1px rgba(255, 255, 255, 0.1);
+}
+
 .card-front {
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.16), transparent 34%),
@@ -269,6 +283,13 @@ h1 {
   transform: scale(1.08);
 }
 
+body.mobile-gesture-mode .card-face.has-image::before {
+  inset: -8px;
+  filter: blur(8px);
+  opacity: 0.58;
+  transform: scale(1.04);
+}
+
 .card-photo {
   position: relative;
   z-index: 2;
@@ -277,6 +298,10 @@ h1 {
   border-radius: 18px;
   object-fit: contain;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+}
+
+body.mobile-gesture-mode .card-photo {
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
 }
 
 .card-face.has-image .card-content {
@@ -315,7 +340,8 @@ h1 {
 }
 
 .gesture-guide,
-.status {
+.status,
+.gesture-indicator {
   position: fixed;
   z-index: 30;
   left: 50%;
@@ -355,6 +381,48 @@ h1 {
   text-overflow: ellipsis;
 }
 
+.gesture-indicator {
+  top: 96px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(7, 10, 18, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.gesture-indicator-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 0 0 rgba(148, 163, 184, 0.45);
+}
+
+.gesture-indicator.is-detected .gesture-indicator-dot,
+.gesture-indicator.is-open .gesture-indicator-dot {
+  background: #80ffdb;
+  box-shadow: 0 0 0 6px rgba(128, 255, 219, 0.12);
+}
+
+.gesture-indicator.is-open {
+  color: #d7fff4;
+}
+
+.gesture-indicator.is-pinching .gesture-indicator-dot {
+  background: #facc15;
+  box-shadow: 0 0 0 7px rgba(250, 204, 21, 0.14);
+}
+
+.gesture-indicator.is-unavailable .gesture-indicator-dot {
+  background: #fb7185;
+}
+
 .camera-panel {
   position: fixed;
   z-index: 40;
@@ -367,6 +435,17 @@ h1 {
   border-radius: 16px;
   background: #111827;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+
+body.mobile-gesture-mode .camera-panel {
+  right: auto;
+  bottom: auto;
+  left: -8px;
+  top: -8px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 #camera,
@@ -427,6 +506,13 @@ h1 {
     display: none;
   }
 
+  .gesture-indicator {
+    top: 86px;
+    right: 16px;
+    left: auto;
+    transform: none;
+  }
+
   .status {
     right: 154px;
     bottom: 12px;
@@ -434,6 +520,10 @@ h1 {
     max-width: none;
     transform: none;
     white-space: normal;
+  }
+
+  body.mobile-gesture-mode .status {
+    right: 12px;
   }
 }
 

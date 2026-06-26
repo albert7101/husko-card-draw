@@ -1,15 +1,17 @@
 const isTouchDevice = navigator.maxTouchPoints > 0;
 const isCompactDevice = isTouchDevice || window.innerWidth <= 760;
-const inferenceIntervalMs = isCompactDevice ? 85 : 60;
+const isAndroidDevice = /Android/i.test(navigator.userAgent);
+const mobileGestureMode = isAndroidDevice || (isTouchDevice && isCompactDevice);
+const inferenceIntervalMs = mobileGestureMode ? 140 : isCompactDevice ? 100 : 60;
 const pinchCloseRatio = 0.52;
 const pinchReleaseRatio = 0.72;
 const pinchHoldFrames = 2;
 const pinchReleaseFrames = 2;
 const handReadyFrames = 3;
-const handSpeedMultiplier = 8;
-const maxSpinSpeed = 28;
+const handSpeedMultiplier = isCompactDevice ? 7 : 8;
+const maxSpinSpeed = isCompactDevice ? 20 : 28;
 const stopSpinSpeed = 0.08;
-const spinFriction = 0.984;
+const spinFriction = isCompactDevice ? 0.978 : 0.984;
 
 const stage = document.querySelector(".stage");
 const carousel = document.getElementById("carousel");
@@ -17,9 +19,15 @@ const pinchHint = document.getElementById("pinchHint");
 const currentCard = document.getElementById("currentCard");
 const totalCards = document.getElementById("totalCards");
 const statusText = document.getElementById("status");
+const gestureIndicator = document.getElementById("gestureIndicator");
+const gestureIndicatorText = document.getElementById("gestureIndicatorText");
 const video = document.getElementById("camera");
 const canvas = document.getElementById("overlay");
 const canvasContext = canvas.getContext("2d");
+
+if (mobileGestureMode) {
+  document.body.classList.add("mobile-gesture-mode");
+}
 
 let selectedIndex = 0;
 let wheelPosition = 0;
@@ -33,6 +41,7 @@ let smoothedPinchRatio = null;
 let inferenceBusy = false;
 let lastInferenceTime = 0;
 let lastStatus = statusText.textContent;
+let lastGestureState = "searching";
 let pinchHintTimer = null;
 let spinVelocity = 0;
 let spinAnimationFrame = null;
@@ -128,17 +137,23 @@ function circularOffset(index) {
 
 function renderCards() {
   const cards = carousel.querySelectorAll(".card-shell");
+  const visibleLimit = isCompactDevice ? 2.7 : 4.6;
+  const spread = isCompactDevice ? 34 : 42;
+  const scaleStep = isCompactDevice ? 0.13 : 0.105;
+  const turnStep = isCompactDevice ? -7 : -11;
+  const depthStep = isCompactDevice ? -36 : -85;
+
   selectedIndex = ((Math.round(wheelPosition) % CARD_DATA.length) + CARD_DATA.length) % CARD_DATA.length;
 
   cards.forEach((card, index) => {
     const offset = circularOffset(index);
     const distance = Math.abs(offset);
-    const visible = distance <= 4.6;
+    const visible = distance <= visibleLimit;
 
-    card.style.setProperty("--x", `${offset * 42}%`);
-    card.style.setProperty("--scale", Math.max(0.62, 1 - distance * 0.105));
-    card.style.setProperty("--turn", `${offset * -11}deg`);
-    card.style.setProperty("--depth", `${distance * -85}px`);
+    card.style.setProperty("--x", `${offset * spread}%`);
+    card.style.setProperty("--scale", Math.max(0.62, 1 - distance * scaleStep));
+    card.style.setProperty("--turn", `${offset * turnStep}deg`);
+    card.style.setProperty("--depth", `${distance * depthStep}px`);
     card.style.zIndex = String(Math.round(200 - distance * 10));
     card.classList.toggle("is-selected", index === selectedIndex);
     card.classList.toggle("is-hidden", !visible);
@@ -234,7 +249,9 @@ function launchSpin(velocity) {
   }
 
   setStatus(
-    Math.abs(spinVelocity) >= 8
+    mobileGestureMode
+      ? "Spinning cards..."
+      : Math.abs(spinVelocity) >= 8
       ? "Fast spin - hold your hand still to slow down"
       : "Rotating cards..."
   );
@@ -266,6 +283,14 @@ function setStatus(message) {
   if (message === lastStatus) return;
   lastStatus = message;
   statusText.textContent = message;
+}
+
+function setGestureIndicator(state, label) {
+  if (state === lastGestureState && gestureIndicatorText.textContent === label) return;
+
+  lastGestureState = state;
+  gestureIndicator.className = `gesture-indicator is-${state}`;
+  gestureIndicatorText.textContent = label;
 }
 
 function distance(a, b) {
@@ -314,8 +339,13 @@ function trackGesture(landmarks) {
   visibleHandFrames = Math.min(visibleHandFrames + 1, handReadyFrames);
   const currentPinchRatio = pinchRatio(landmarks);
   const handIsReady = visibleHandFrames >= handReadyFrames;
+  const palmIsOpen = isOpenPalm(landmarks);
 
   if (currentPinchRatio <= pinchCloseRatio) {
+    setGestureIndicator(
+      handIsReady ? "pinching" : "detected",
+      handIsReady ? "Pinch detected" : "Hand detected"
+    );
     hidePinchHint();
     lastPalmX = null;
     lastPalmSampleTime = 0;
@@ -355,7 +385,11 @@ function trackGesture(landmarks) {
     pinchOpenFrames = 0;
   }
 
-  if (!isOpenPalm(landmarks)) {
+  if (!palmIsOpen) {
+    setGestureIndicator(
+      handIsReady ? "detected" : "searching",
+      handIsReady ? "Hand detected" : "Looking for hand"
+    );
     hidePinchHint();
     lastPalmX = null;
     lastPalmSampleTime = 0;
@@ -365,6 +399,7 @@ function trackGesture(landmarks) {
 
   const palmX = 1 - palmCenterX(landmarks);
   const sampleTime = performance.now();
+  setGestureIndicator("open", "Open palm ready");
 
   if (lastPalmX === null) {
     lastPalmX = palmX;
@@ -386,6 +421,8 @@ function trackGesture(landmarks) {
 }
 
 function drawHand(results) {
+  if (mobileGestureMode) return;
+
   const width = video.videoWidth || canvas.clientWidth;
   const height = video.videoHeight || canvas.clientHeight;
 
@@ -421,6 +458,7 @@ function onResults(results) {
     pinchOpenFrames = 0;
     visibleHandFrames = 0;
     smoothedPinchRatio = null;
+    setGestureIndicator("searching", "Looking for hand");
     if (spinAnimationFrame === null) {
       setStatus("Show your hand - swing to rotate, pinch to flip");
     }
@@ -430,9 +468,39 @@ function onResults(results) {
   trackGesture(results.multiHandLandmarks[0]);
 }
 
-function startHands() {
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.append(script);
+  });
+}
+
+async function startHands() {
+  try {
+    if (typeof Camera === "undefined") {
+      await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js");
+    }
+
+    if (!mobileGestureMode && (typeof drawConnectors === "undefined" || typeof drawLandmarks === "undefined")) {
+      await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js");
+    }
+
+    if (typeof Hands === "undefined") {
+      await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js");
+    }
+  } catch {
+    setStatus("Gesture library did not load - use swipe, arrows, or Space");
+    setGestureIndicator("unavailable", "Camera unavailable");
+    return;
+  }
+
   if (typeof Hands === "undefined" || typeof Camera === "undefined") {
-    setStatus("Gesture library did not load - use arrow keys and Space");
+    setStatus("Gesture library did not load - use swipe, arrows, or Space");
+    setGestureIndicator("unavailable", "Camera unavailable");
     return;
   }
 
@@ -443,8 +511,8 @@ function startHands() {
   hands.setOptions({
     maxNumHands: 1,
     modelComplexity: 0,
-    minDetectionConfidence: 0.62,
-    minTrackingConfidence: 0.62,
+    minDetectionConfidence: mobileGestureMode ? 0.55 : 0.62,
+    minTrackingConfidence: mobileGestureMode ? 0.55 : 0.62,
   });
 
   hands.onResults(onResults);
@@ -466,12 +534,13 @@ function startHands() {
         inferenceBusy = false;
       }
     },
-    width: isCompactDevice ? 360 : 480,
-    height: isCompactDevice ? 270 : 360,
+    width: mobileGestureMode ? 256 : isCompactDevice ? 360 : 480,
+    height: mobileGestureMode ? 192 : isCompactDevice ? 270 : 360,
   });
 
   camera.start().catch(() => {
     setStatus("Camera unavailable - use arrow keys and Space");
+    setGestureIndicator("unavailable", "Camera unavailable");
   });
 }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gesture Card Carousel</title>
-    <link rel="stylesheet" href="style.css?v=13" />
+    <link rel="stylesheet" href="style.css?v=15" />
   </head>
   <body>
     <main class="stage">
@@ -34,6 +34,11 @@
         <span>Pinch to flip</span>
       </div>
 
+      <div id="gestureIndicator" class="gesture-indicator is-searching" aria-live="polite">
+        <span class="gesture-indicator-dot"></span>
+        <span id="gestureIndicatorText">Looking for hand</span>
+      </div>
+
       <div id="status" class="status" aria-live="polite">
         Show your hand — swing to rotate, pinch to flip
       </div>
@@ -44,10 +49,7 @@
       <canvas id="overlay"></canvas>
     </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="cards.js?v=8"></script>
-    <script src="script.js?v=18"></script>
+    <script src="script.js?v=21"></script>
   </body>
 </html>
