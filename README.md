@@ -18,3 +18,5 @@ A browser-based 20-card carousel controlled with hand gestures.
 Double-click `open-demo.bat`, keep its window open, and allow camera access in the browser.
 
 To change card images, open `cards.js` and add image filenames to `frontImage` or `backImage`.
+
+https://albert7101.github.io/husko-card-draw/
